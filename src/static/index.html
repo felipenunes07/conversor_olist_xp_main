@@ -44,42 +44,66 @@
           <div class="form-group">
             <label>Pedido de Entrada</label>
             <div id="upload-area" class="upload-area">
-              <p class="upload-area-text">
-                Arraste e solte um arquivo Excel aqui ou
-              </p>
-              <button
-                type="button"
-                id="usar-arquivo-excel-btn"
-                class="excel-btn"
-              >
-                Clique para selecionar um arquivo
-              </button>
-              <input
-                type="file"
-                id="arquivo-excel-input"
-                accept=".xlsx, .xls"
-                style="display: none"
-              />
-              <p id="file-name-display" class="file-name-display"></p>
-              <!-- Para mostrar o nome do arquivo -->
+              <!-- Estado inicial: Prompt para upload -->
+              <div class="upload-prompt">
+                <div class="icon-upload"></div>
+                <p class="upload-area-text">
+                  Arraste e solte um arquivo Excel aqui ou
+                </p>
+                <button
+                  type="button"
+                  id="usar-arquivo-excel-btn"
+                  class="excel-btn"
+                >
+                  Clique para selecionar um arquivo
+                </button>
+                <input
+                  type="file"
+                  id="arquivo-excel-input"
+                  accept=".xlsx, .xls"
+                  style="display: none"
+                />
+              </div>
+
+              <!-- Estado 2: Arquivo selecionado -->
+              <div class="file-display" style="display: none">
+                <div class="icon-file"></div>
+                <p id="file-name-display" class="file-name-display"></p>
+                <button
+                  type="button"
+                  id="remove-file-btn"
+                  class="remove-file-btn"
+                >
+                  Remover
+                </button>
+              </div>
+
+              <!-- Estado 3: Processando (Spinner) -->
+              <div class="spinner-container" style="display: none">
+                <div class="spinner"></div>
+                <p>Processando...</p>
+              </div>
             </div>
-            <button type="submit" id="processar-btn" class="processar-btn">
+            <button
+              type="submit"
+              id="processar-btn"
+              class="processar-btn"
+              disabled
+            >
               Processar Pedido
             </button>
           </div>
         </div>
 
         <div class="output-section">
-          <label>Pré-visualização / Resultado</label>
+          <label>Resultado da Conversão</label>
           <div id="preview-area" class="preview-area">
+            <!-- Estado inicial do resultado -->
             <div class="placeholder">
-              <span>!</span>
-              <p>
-                Faça o upload de um arquivo Excel e selecione um cliente para
-                visualizar a conversão
-              </p>
+              <div class="icon-placeholder"></div>
+              <p>Aguardando arquivo para conversão...</p>
             </div>
-            <!-- O link para download aparecerá aqui -->
+            <!-- Feedback de sucesso ou erro aparecerá aqui -->
           </div>
         </div>
       </main>

@@ -19,9 +19,66 @@ document.addEventListener('DOMContentLoaded', () => {
   const salvarMapeamentoBtn = document.getElementById('salvar-mapeamento-btn')
   const mappingUploadStatus = document.getElementById('mapping-upload-status')
 
+  // Elementos da interface de upload
+  const uploadPrompt = document.querySelector('.upload-prompt')
+  const fileDisplay = document.querySelector('.file-display')
+  const removeFileBtn = document.getElementById('remove-file-btn')
+  const spinnerContainer = document.querySelector('.spinner-container')
+  const placeholder = previewArea.querySelector('.placeholder')
+
   let arquivoSelecionado = null
   let arquivoClientesSelecionado = null
   let arquivoProdutosSelecionado = null
+
+  // Funções de UI
+
+  function showFileUI(file) {
+    arquivoSelecionado = file
+    fileNameDisplay.textContent = file.name
+    uploadPrompt.style.display = 'none'
+    spinnerContainer.style.display = 'none'
+    fileDisplay.style.display = 'flex'
+    uploadArea.classList.add('file-selected')
+    processarBtn.disabled = false
+    previewArea.innerHTML = ''
+    previewArea.appendChild(placeholder) // Mostra o placeholder novamente
+  }
+
+  function resetUploadUI() {
+    arquivoSelecionado = null
+    arquivoExcelInput.value = ''
+    fileDisplay.style.display = 'none'
+    spinnerContainer.style.display = 'none'
+    uploadPrompt.style.display = 'flex'
+    uploadArea.classList.remove('file-selected')
+    processarBtn.disabled = true
+    previewArea.innerHTML = ''
+    previewArea.appendChild(placeholder)
+  }
+
+  function showSpinner() {
+    uploadPrompt.style.display = 'none'
+    fileDisplay.style.display = 'none'
+    spinnerContainer.style.display = 'flex'
+  }
+
+  function showFeedback(type, title, message, downloadUrl = null) {
+    const iconClass = type === 'success' ? 'success' : 'error'
+    let downloadButton = ''
+    if (downloadUrl) {
+      const fileName = 'orcamento_convertido_olist.xlsx'
+      downloadButton = `<a href="${downloadUrl}" class="download-btn" download="${fileName}">Baixar Arquivo Novamente</a>`
+    }
+
+    previewArea.innerHTML = `
+      <div class="feedback-message">
+        <div class="icon ${iconClass}"></div>
+        <h3>${title}</h3>
+        <p>${message}</p>
+        ${downloadButton}
+      </div>
+    `
+  }
 
   // Função para carregar clientes no select
   function carregarClientes() {
@@ -93,18 +150,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   arquivoExcelInput.addEventListener('change', (event) => {
     if (event.target.files.length > 0) {
-      arquivoSelecionado = event.target.files[0]
-      fileNameDisplay.textContent = `Arquivo selecionado: ${arquivoSelecionado.name}`
-      previewArea.innerHTML = `<p>Arquivo "${arquivoSelecionado.name}" pronto para processar.</p><p>Selecione o cliente e clique em processar.</p>`
+      showFileUI(event.target.files[0])
     }
   })
 
+  removeFileBtn.addEventListener('click', resetUploadUI)
+
   uploadArea.addEventListener('dragover', (event) => {
     event.preventDefault()
-    uploadArea.classList.add('dragover')
+    if (!arquivoSelecionado) uploadArea.classList.add('dragover')
   })
 
   uploadArea.addEventListener('dragleave', () => {
+    event.preventDefault()
     uploadArea.classList.remove('dragover')
   })
 
@@ -115,14 +173,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (files.length > 0) {
       const file = files[0]
       if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
-        arquivoSelecionado = file
-        fileNameDisplay.textContent = `Arquivo selecionado: ${arquivoSelecionado.name}`
-        previewArea.innerHTML = `<p>Arquivo "${arquivoSelecionado.name}" pronto para processar.</p><p>Selecione o cliente e clique em processar.</p>`
+        showFileUI(file)
       } else {
-        fileNameDisplay.textContent = ''
-        previewArea.innerHTML =
-          "<p style='color:red;'>Por favor, solte um arquivo Excel (.xlsx ou .xls).</p>"
-        arquivoSelecionado = null
+        resetUploadUI()
+        showFeedback(
+          'error',
+          'Arquivo Inválido',
+          'Por favor, use apenas arquivos Excel (.xlsx ou .xls).'
+        )
       }
     }
   })
@@ -130,143 +188,133 @@ document.addEventListener('DOMContentLoaded', () => {
   processarBtn.addEventListener('click', () => {
     const clienteId = clienteSelect.value
     if (!clienteId) {
-      previewArea.innerHTML =
-        "<p style='color:red;'>Por favor, selecione um cliente.</p>"
+      showFeedback(
+        'error',
+        'Cliente não selecionado',
+        'Por favor, selecione um cliente para continuar.'
+      )
       return
     }
     if (!arquivoSelecionado) {
-      previewArea.innerHTML =
-        "<p style='color:red;'>Por favor, selecione um arquivo Excel de orçamento.</p>"
+      showFeedback(
+        'error',
+        'Arquivo não selecionado',
+        'Por favor, selecione um arquivo Excel de orçamento.'
+      )
       return
     }
-    previewArea.innerHTML = '<p>Processando...</p>'
+
+    showSpinner()
+    previewArea.innerHTML = ''
+
     const formData = new FormData()
     formData.append('cliente_id', clienteId)
     formData.append('arquivo_excel', arquivoSelecionado)
+
     fetch('/processar', { method: 'POST', body: formData })
-      .then((response) => {
+      .then(async (response) => {
         if (!response.ok) {
-          return response.json().then((err) => {
-            throw new Error(
-              err.error || 'Erro no servidor ao processar o orçamento'
-            )
-          })
+          const err = await response.json()
+          throw new Error(err.error || 'Ocorreu um erro no servidor.')
         }
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.indexOf('application/json') !== -1) {
-          return response.json().then((err) => {
-            throw new Error(
-              err.error ||
-                'Erro retornado pelo servidor ao processar o orçamento'
-            )
-          })
-        }
-        return response.blob()
-      })
-      .then((blob) => {
+        const blob = await response.blob()
         if (blob) {
           const url = window.URL.createObjectURL(blob)
+          const fileName = 'orcamento_convertido_olist.xlsx'
+
+          showFeedback(
+            'success',
+            'Arquivo Processado!',
+            'Seu arquivo foi convertido com sucesso.',
+            url,
+            fileName
+          )
+
           const a = document.createElement('a')
           a.href = url
-          a.download = 'orcamento_convertido_olist.xlsx'
+          a.download = fileName
           document.body.appendChild(a)
           a.click()
           a.remove()
-          window.URL.revokeObjectURL(url)
-          previewArea.innerHTML = `<div id='download-link'><p>Arquivo de orçamento processado com sucesso!</p><a href='${url}' download='orcamento_convertido_olist.xlsx'>Clique aqui para baixar novamente</a></div>`
-          fileNameDisplay.textContent = ''
-          arquivoSelecionado = null
-          arquivoExcelInput.value = null
+
+          resetUploadUI()
           clienteSelect.selectedIndex = 0
         }
       })
       .catch((error) => {
-        console.error('Erro no processamento do orçamento:', error)
-        previewArea.innerHTML = `<p style='color:red;'>Erro no processamento do orçamento: ${error.message}</p>`
+        showFeedback('error', 'Erro no Processamento', error.message)
+        resetUploadUI()
       })
   })
 
   // Lógica para upload de arquivos de mapeamento
   clientesFileInput.addEventListener('change', (event) => {
-    if (event.target.files.length > 0) {
-      arquivoClientesSelecionado = event.target.files[0]
-      clientesFileNameDisplay.textContent = `Arquivo selecionado: ${arquivoClientesSelecionado.name}`
-    } else {
-      arquivoClientesSelecionado = null
-      clientesFileNameDisplay.textContent = ''
-    }
+    arquivoClientesSelecionado =
+      event.target.files.length > 0 ? event.target.files[0] : null
+    clientesFileNameDisplay.textContent = arquivoClientesSelecionado
+      ? `Selecionado: ${arquivoClientesSelecionado.name}`
+      : ''
   })
 
   produtosFileInput.addEventListener('change', (event) => {
-    if (event.target.files.length > 0) {
-      arquivoProdutosSelecionado = event.target.files[0]
-      produtosFileNameDisplay.textContent = `Arquivo selecionado: ${arquivoProdutosSelecionado.name}`
-    } else {
-      arquivoProdutosSelecionado = null
-      produtosFileNameDisplay.textContent = ''
-    }
+    arquivoProdutosSelecionado =
+      event.target.files.length > 0 ? event.target.files[0] : null
+    produtosFileNameDisplay.textContent = arquivoProdutosSelecionado
+      ? `Selecionado: ${arquivoProdutosSelecionado.name}`
+      : ''
   })
 
   salvarMapeamentoBtn.addEventListener('click', () => {
     mappingUploadStatus.innerHTML = '' // Limpa status anterior
     let uploadsPromises = []
-
-    if (arquivoClientesSelecionado) {
-      const formDataClientes = new FormData()
-      formDataClientes.append('file', arquivoClientesSelecionado)
-      formDataClientes.append('file_type', 'clientes')
-      uploadsPromises.push(
-        fetch('/upload_mapeamento', { method: 'POST', body: formDataClientes })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) throw new Error(`Clientes: ${data.error}`)
-            return data.message
-          })
-      )
+    const createUploadPromise = (file, type) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('file_type', type)
+      return fetch('/upload_mapeamento', { method: 'POST', body: formData })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) throw new Error(`${type}: ${data.error}`)
+          return data.message
+        })
     }
 
-    if (arquivoProdutosSelecionado) {
-      const formDataProdutos = new FormData()
-      formDataProdutos.append('file', arquivoProdutosSelecionado)
-      formDataProdutos.append('file_type', 'produtos')
+    if (arquivoClientesSelecionado) {
       uploadsPromises.push(
-        fetch('/upload_mapeamento', { method: 'POST', body: formDataProdutos })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.error) throw new Error(`Produtos: ${data.error}`)
-            return data.message
-          })
+        createUploadPromise(arquivoClientesSelecionado, 'clientes')
+      )
+    }
+    if (arquivoProdutosSelecionado) {
+      uploadsPromises.push(
+        createUploadPromise(arquivoProdutosSelecionado, 'produtos')
       )
     }
 
     if (uploadsPromises.length === 0) {
-      mappingUploadStatus.innerHTML =
-        "<p style='color:orange;'>Nenhum arquivo selecionado para upload.</p>"
+      mappingUploadStatus.innerHTML = `<p style='color:orange;'>Nenhum arquivo selecionado.</p>`
       return
     }
 
-    mappingUploadStatus.innerHTML = '<p>Enviando arquivos...</p>'
+    mappingUploadStatus.innerHTML = '<p>Enviando...</p>'
 
     Promise.all(uploadsPromises)
       .then((messages) => {
-        mappingUploadStatus.innerHTML = messages
-          .map((msg) => `<p style='color:green;'>${msg}</p>`)
-          .join('')
-        // Limpa os inputs e nomes de arquivos após sucesso
-        if (arquivoClientesSelecionado) {
-          clientesFileInput.value = null
-          clientesFileNameDisplay.textContent = ''
-          arquivoClientesSelecionado = null
-          carregarClientes() // Recarrega a lista de clientes
-        }
-        if (arquivoProdutosSelecionado) {
-          produtosFileInput.value = null
-          produtosFileNameDisplay.textContent = ''
-          arquivoProdutosSelecionado = null
-        }
+        mappingUploadStatus.innerHTML = `<p style='color:green;'>${messages.join(
+          ', '
+        )}</p>`
+        carregarClientes() // Recarrega a lista de clientes após o sucesso
       })
       .catch((error) => {
-        mappingUploadStatus.innerHTML = `<p style='color:red;'>Erro no upload: ${error.message}</p>`
+        mappingUploadStatus.innerHTML = `<p style='color:red;'>Erro: ${error.message}</p>`
+      })
+      .finally(() => {
+        // Limpa os inputs e nomes de arquivos
+        clientesFileInput.value = ''
+        produtosFileInput.value = ''
+        clientesFileNameDisplay.textContent = ''
+        produtosFileNameDisplay.textContent = ''
+        arquivoClientesSelecionado = null
+        arquivoProdutosSelecionado = null
       })
   })
 })
