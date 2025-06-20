@@ -297,53 +297,52 @@ def converter_orcamento_para_olist(
         linhas_saida = []
         for index, linha_item in df_orcamento_itens.iterrows():
             produto_orcamento_original = linha_item.get('produto', pd.NA)
-            
-            # Verificar se as colunas existem antes de tentar acessá-las
             qtde = linha_item.get('quantidade', pd.NA)
-            
-            # Verificar se temos 'valor unitário' ou 'valor'
             if 'valor unitário' in linha_item:
                 valor_unit = linha_item.get('valor unitário')
             elif 'valor' in linha_item:
                 valor_unit = linha_item.get('valor')
             else:
                 valor_unit = pd.NA
-            
-            # MODIFICAÇÃO: Não pular linhas sem produto se tiver SKU
-            if pd.isna(produto_orcamento_original) and pd.isna(qtde) and pd.isna(valor_unit) and pd.isna(linha_item.get('sku', pd.NA)):
+
+            # FILTRAR LINHAS DE TOTAL/SUBTOTAL
+            produto_str = str(produto_orcamento_original).lower() if pd.notna(produto_orcamento_original) else ""
+            palavras_total = ['total', 'subtotal', 'valor total', 'total geral', 'soma', 'sum']
+            if any(palavra in produto_str for palavra in palavras_total):
+                print(f"[CONVERSOR V6] Pulando linha de total: {produto_orcamento_original}", file=sys.stderr)
                 continue
-                
+
+            # FILTRAR LINHAS SEM PRODUTO REAL
+            if pd.isna(produto_orcamento_original) or str(produto_orcamento_original).strip() == '':
+                print(f"[CONVERSOR V6] Pulando linha sem produto: {linha_item}", file=sys.stderr)
+                continue
+
             # Verificar se temos SKU no orçamento
             sku_orcamento_original = None
-            # Verificar se a coluna 'sku' existe no DataFrame
             if 'sku' in linha_item and pd.notna(linha_item.get('sku')):
                 sku_orcamento_original = linha_item.get('sku')
                 sku_orcamento_busca_normalizado = normalizar_texto(sku_orcamento_original)
             else:
                 sku_orcamento_busca_normalizado = None
-            
+
             produto_orcamento_busca_normalizado = normalizar_texto(produto_orcamento_original) if pd.notna(produto_orcamento_original) else ""
-            
+
             id_produto_olist = pd.NA
             descricao_produto_olist = pd.NA
-            
+
             # Priorizar busca pelo SKU se disponível
             if sku_orcamento_original and sku_orcamento_busca_normalizado:
                 produto_mapeado_df = df_mapeamento[
                     df_mapeamento['SKU_NORMALIZADO_BUSCA'] == sku_orcamento_busca_normalizado
                 ]
-                
-                # Se encontrou pelo SKU, preenche ID e descrição
                 if not produto_mapeado_df.empty:
                     produto_mapeado = produto_mapeado_df.iloc[0]
                     id_produto_olist = produto_mapeado.get('ID', pd.NA)
                     descricao_produto_olist = produto_mapeado.get('MODELO OLIST', pd.NA)
-                # Se não encontrar pelo SKU, tenta pelo modelo como fallback
                 elif produto_orcamento_busca_normalizado:
                     produto_mapeado_df = df_mapeamento[
                         df_mapeamento['MODELO'].apply(normalizar_texto) == produto_orcamento_busca_normalizado
                     ]
-                    
                     if not produto_mapeado_df.empty:
                         produto_mapeado = produto_mapeado_df.iloc[0]
                         id_produto_olist = produto_mapeado.get('ID', pd.NA)
@@ -352,12 +351,10 @@ def converter_orcamento_para_olist(
                         produtos_nao_mapeados_log.append(
                             f"'{sku_orcamento_busca_normalizado}' (SKU Original: '{sku_orcamento_original}')"
                         )
-            # Se não tiver SKU, busca pelo modelo (compatibilidade com versões anteriores)
             elif produto_orcamento_busca_normalizado:
                 produto_mapeado_df = df_mapeamento[
                     df_mapeamento['MODELO'].apply(normalizar_texto) == produto_orcamento_busca_normalizado
                 ]
-                
                 if not produto_mapeado_df.empty:
                     produto_mapeado = produto_mapeado_df.iloc[0]
                     id_produto_olist = produto_mapeado.get('ID', pd.NA)
@@ -366,8 +363,7 @@ def converter_orcamento_para_olist(
                     produtos_nao_mapeados_log.append(
                         f"'{produto_orcamento_busca_normalizado}' (Original: '{produto_orcamento_original}')"
                     )
-            
-            # MODIFICAÇÃO: Garantir que número da proposta e data sejam incluídos na saída
+
             linha_convertida = {
                 'Número da proposta': num_proposta_orc if num_proposta_orc is not None else pd.NA,
                 'Data': data_proposta_orc if data_proposta_orc is not None else pd.NA,
@@ -378,10 +374,7 @@ def converter_orcamento_para_olist(
                 'Quantidade': qtde if pd.notna(qtde) else pd.NA,
                 'Valor unitário': valor_unit if pd.notna(valor_unit) else pd.NA
             }
-            
-            # Adicionar log para depuração
-            print(f"[CONVERSOR V6] Adicionando linha com Número da proposta: {num_proposta_orc}, Data: {data_proposta_orc}", file=sys.stderr)
-            
+            print(f"[CONVERSOR V6] Adicionando linha convertida: {linha_convertida}", file=sys.stderr)
             linhas_saida.append({col: linha_convertida.get(col, pd.NA) for col in colunas_modelo_olist})
         
         if produtos_nao_mapeados_log:
@@ -389,7 +382,14 @@ def converter_orcamento_para_olist(
             for produto in produtos_nao_mapeados_log:
                 print(f"  - {produto}", file=sys.stderr)
         
-        return pd.DataFrame(linhas_saida)
+        # Criar DataFrame de saída
+        df_saida = pd.DataFrame(linhas_saida)
+        
+        # Preencher a coluna 'Situação' com 'Aguardando' para todas as linhas válidas
+        if not df_saida.empty:
+            df_saida['Situação'] = 'Aguardando'
+
+        return df_saida
         
     except Exception as e:
         print(f"[CONVERSOR V6] Erro: {str(e)}\n{traceback.format_exc()}", file=sys.stderr)

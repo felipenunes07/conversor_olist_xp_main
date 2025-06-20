@@ -204,6 +204,13 @@ def converter_orcamento_para_olist(
             
             if pd.isna(produto_orcamento_original) and pd.isna(qtde) and pd.isna(valor_unit):
                 continue
+            
+            # FILTRAR LINHAS DE TOTAL/SUBTOTAL
+            produto_str = str(produto_orcamento_original).lower() if pd.notna(produto_orcamento_original) else ""
+            palavras_total = ['total', 'subtotal', 'valor total', 'total geral', 'soma', 'sum']
+            if any(palavra in produto_str for palavra in palavras_total):
+                print(f"[CONVERSOR V6] Pulando linha de total: {produto_orcamento_original}", file=sys.stderr)
+                continue
                 
             # Verificar se temos SKU no orçamento
             sku_orcamento_original = None
@@ -257,25 +264,35 @@ def converter_orcamento_para_olist(
                         f"'{produto_orcamento_busca_normalizado}' (Original: '{produto_orcamento_original}')"
                     )
             
-            linha_convertida = {
-                'Número da proposta': num_proposta_orc if num_proposta_orc is not None else pd.NA,
-                'Data': data_proposta_orc if data_proposta_orc is not None else pd.NA,
-                'ID contato': id_contato_cliente,
-                'Nome do contato': nome_contato_cliente,
-                'ID produto': id_produto_olist,
-                'Descrição': descricao_produto_olist,
-                'Quantidade': qtde if pd.notna(qtde) else pd.NA,
-                'Valor unitário': valor_unit if pd.notna(valor_unit) else pd.NA
-            }
-            
-            linhas_saida.append({col: linha_convertida.get(col, pd.NA) for col in colunas_modelo_olist})
+            # Só incluir informações de cabeçalho se houver um produto válido
+            if pd.notna(produto_orcamento_original) or pd.notna(sku_orcamento_original):
+                linha_convertida = {
+                    'Número da proposta': num_proposta_orc if num_proposta_orc is not None else pd.NA,
+                    'Data': data_proposta_orc if data_proposta_orc is not None else pd.NA,
+                    'ID contato': id_contato_cliente,
+                    'Nome do contato': nome_contato_cliente,
+                    'ID produto': id_produto_olist,
+                    'Descrição': descricao_produto_olist,
+                    'Quantidade': qtde if pd.notna(qtde) else pd.NA,
+                    'Valor unitário': valor_unit if pd.notna(valor_unit) else pd.NA
+                }
+                
+                linhas_saida.append({col: linha_convertida.get(col, pd.NA) for col in colunas_modelo_olist})
         
         if produtos_nao_mapeados_log:
             print("[CONVERSOR V6] Produtos não mapeados:", file=sys.stderr)
             for produto in produtos_nao_mapeados_log:
                 print(f"  - {produto}", file=sys.stderr)
         
-        return pd.DataFrame(linhas_saida)
+        # Criar DataFrame de saída
+        df_saida = pd.DataFrame(linhas_saida)
+        
+        # Preencher 'Situação' apenas nas linhas onde 'produto' está preenchido
+        if not df_saida.empty and 'produto' in df_saida.columns:
+            linhas_com_produto = df_saida['produto'].notna() & (df_saida['produto'].astype(str).str.strip() != '')
+            df_saida.loc[linhas_com_produto, 'Situação'] = 'Aguardando'
+
+        return df_saida
         
     except Exception as e:
         print(f"[CONVERSOR V6] Erro: {str(e)}\n{traceback.format_exc()}", file=sys.stderr)
