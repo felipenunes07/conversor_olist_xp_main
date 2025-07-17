@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conversor Sistema Olist</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="manifest" href="/static/manifest.json" />
+    <meta name="theme-color" content="#6a1b9a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="Conversor XP" />
+    <link rel="apple-touch-icon" href="/static/icons/icon-152x152.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/icons/icon-72x72.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/icons/icon-72x72.png"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Conversor Sistema Olist</h1>
+        <p>Converta seus pedidos para o formato aceito pelo sistema Olist</p>
+      </header>
+
+      <main>
+        <div class="input-section">
+          <div class="form-group">
+            <label for="cliente-select">Selecione o Cliente</label>
+            <select id="cliente-select" name="cliente">
+              <option value="">Selecione um cliente...</option>
+              <!-- Opções de cliente serão carregadas aqui -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Pedido de Entrada</label>
+            <div id="upload-area" class="upload-area">
+              <!-- Estado inicial: Prompt para upload -->
+              <div class="upload-prompt">
+                <div class="icon-upload"></div>
+                <p class="upload-area-text">
+                  Arraste e solte um arquivo Excel aqui ou
+                </p>
+                <button
+                  type="button"
+                  id="usar-arquivo-excel-btn"
+                  class="excel-btn"
+                >
+                  Clique para selecionar um arquivo
+                </button>
+                <input
+                  type="file"
+                  id="arquivo-excel-input"
+                  accept=".xlsx, .xls"
+                  style="display: none"
+                />
+              </div>
+
+              <!-- Estado 2: Arquivo selecionado -->
+              <div class="file-display" style="display: none">
+                <div class="icon-file"></div>
+                <p id="file-name-display" class="file-name-display"></p>
+                <button
+                  type="button"
+                  id="remove-file-btn"
+                  class="remove-file-btn"
+                >
+                  Remover
+                </button>
+              </div>
+
+              <!-- Estado 3: Processando (Spinner) -->
+              <div class="spinner-container" style="display: none">
+                <div class="spinner"></div>
+                <p>Processando...</p>
+              </div>
+            </div>
+            <button
+              type="submit"
+              id="processar-btn"
+              class="processar-btn"
+              disabled
+            >
+              Processar Pedido
+            </button>
+          </div>
+        </div>
+
+        <div class="output-section">
+          <label>Resultado da Conversão</label>
+          <div id="preview-area" class="preview-area">
+            <!-- Estado inicial do resultado -->
+            <div class="placeholder">
+              <div class="icon-placeholder"></div>
+              <p>Aguardando arquivo para conversão...</p>
+            </div>
+            <!-- Feedback de sucesso ou erro aparecerá aqui -->
+          </div>
+        </div>
+      </main>
+
+      <!-- Seção de upload de mapeamento removida, pois agora é feita via Google Sheets -->
+    </div>
+
+    <script src="/static/js/script.js"></script>
+    <script>
+      // Registro do Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker
+            .register('/static/service-worker.js')
+            .then(function (registration) {
+              console.log(
+                'Service Worker registrado com sucesso:',
+                registration.scope
+              )
+            })
+            .catch(function (error) {
+              console.log('Falha ao registrar o Service Worker:', error)
+            })
+        })
+      }
+    </script>
+  </body>
+</html>
