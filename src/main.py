@@ -91,11 +91,24 @@ def get_clientes():
     try:
         # Agora lê do Google Sheets
         from conversor_olist import get_dataframe_from_google_sheet
+        import unicodedata
         df_clientes = get_dataframe_from_google_sheet(CLIENTES_SHEET_URL, sheet_name='clientes')
         
         if 'ID' in df_clientes.columns and 'Nome' in df_clientes.columns:
             df_clientes = df_clientes.dropna(subset=['Nome'])
             df_clientes['ID'] = df_clientes['ID'].astype(str)
+            
+            # Normalizar caracteres especiais nos nomes dos clientes para exibição
+            def normalizar_nome(nome):
+                # Garante que caracteres especiais sejam exibidos corretamente
+                if not isinstance(nome, str):
+                    nome = str(nome)
+                
+                # Simplesmente retorna o nome original sem tentar normalizar
+                # Isso preserva os caracteres especiais como estão no Google Sheets
+                return nome
+                
+            df_clientes['Nome'] = df_clientes['Nome'].apply(normalizar_nome)
             clientes_list = df_clientes[['ID', 'Nome']].to_dict(orient='records')
             return jsonify({'clientes': clientes_list})
         else:
@@ -171,22 +184,68 @@ def processar_arquivo():
                     nome_cliente = info_cliente_df.iloc[0]['Nome']
             if not nome_cliente:
                 nome_cliente = f"cliente_{cliente_id_str}"
-            # Sanitizar nome para arquivo
-            nome_cliente_sanit = ''.join(c for c in str(nome_cliente) if c.isalnum() or c in ('-_')).replace(' ', '_')
-            nome_arquivo = f"orcamento_convertido_olist_{nome_cliente_sanit}.xlsx"
+            # Sanitizar nome para arquivo e limitar a 100 caracteres
+            # Remover caracteres não permitidos em nomes de arquivos
+            import re
+            # Primeiro, normalizar caracteres acentuados para ASCII
+            import unicodedata
+            nome_cliente_norm = unicodedata.normalize('NFKD', str(nome_cliente)).encode('ASCII', 'ignore').decode('ASCII')
+            # Substituir caracteres não permitidos em nomes de arquivos por underscores
+            nome_cliente_sanit = re.sub(r'[\\/*?:"<>|]', '_', nome_cliente_norm)
+            # Substituir espaços por underscores
+            nome_cliente_sanit = nome_cliente_sanit.replace(' ', '_')
+            # Limitar o tamanho para garantir que o nome do arquivo final não ultrapasse 100 caracteres
+            max_cliente_len = 70  # Reservando espaço para "orcamento_convertido_olist_" e ".xlsx"
+            if len(nome_cliente_sanit) > max_cliente_len:
+                nome_cliente_sanit = nome_cliente_sanit[:max_cliente_len]
+            # Formato do nome do arquivo começando com o ID curto do cliente (CL998)
+            # para facilitar a identificação pelas atendentes
+            # Extrai o código curto do cliente (CL998) do nome do cliente se existir
+            import re
+            codigo_curto = None
+            # Tenta encontrar um padrão como CL998 no nome do cliente
+            match = re.search(r'\b(CL\d{3,4})\b', str(nome_cliente))
+            if match:
+                # Usa o código encontrado no nome do cliente
+                codigo_curto = match.group(1)
+                # Remove o código do nome sanitizado para evitar duplicação
+                nome_cliente_sanit = nome_cliente_sanit.replace(match.group(1), '').lstrip('-_').lstrip()
+            else:
+                # Se não encontrar no nome, usa o ID do cliente
+                # Verifica se o cliente_id_str já é um código curto (CL998)
+                if re.match(r'^CL\d{3,4}$', cliente_id_str):
+                    codigo_curto = cliente_id_str
+                else:
+                    # Adiciona o prefixo CL apenas se não existir
+                    codigo_curto = f"CL{cliente_id_str}" if not cliente_id_str.upper().startswith('CL') else cliente_id_str
+            
+            nome_arquivo = f"{codigo_curto}-{nome_cliente_sanit}_orcamento_convertido_olist.xlsx"
 
             # Create output file in memory
             output = io.BytesIO()
+            # Garantir que o Excel seja salvo com codificação UTF-8 para preservar caracteres especiais
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 df_convertido.to_excel(writer, index=False, sheet_name='Sheet1')
             output.seek(0)
             
-            return send_file(
+            # Limitar o nome do arquivo a 100 caracteres para evitar problemas
+            if len(nome_arquivo) > 100:
+                nome_arquivo = nome_arquivo[:100-5] + '.xlsx'
+            
+            # Criar um nome de arquivo simples sem caracteres especiais para evitar problemas
+            # Substituir todos os caracteres acentuados por suas versões sem acento
+            import unicodedata
+            nome_arquivo_simples = unicodedata.normalize('NFKD', nome_arquivo).encode('ASCII', 'ignore').decode('ASCII')
+            
+            # Enviar o arquivo com o nome simplificado
+            response = send_file(
                 output,
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 as_attachment=True,
-                download_name=nome_arquivo
+                download_name=nome_arquivo_simples
             )
+            
+            return response
 
         except Exception as e:
             app.logger.error(f"Error processing file: {str(e)}\n{traceback.format_exc()}")

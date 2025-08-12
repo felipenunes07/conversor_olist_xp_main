@@ -106,12 +106,15 @@ def get_dataframe_from_google_sheet(sheet_url, sheet_name=None, header_row=0):
         response = requests.get(export_url)
         response.raise_for_status() # Levanta um erro para códigos de status HTTP ruins
         
-        df = pd.read_csv(io.StringIO(response.text))
+        # Definir a codificação correta para caracteres especiais
+        response.encoding = 'utf-8'
+        
+        df = pd.read_csv(io.StringIO(response.text), encoding='utf-8')
         
         # Se o cabeçalho não for a primeira linha, precisamos ajustar
         if header_row > 0:
             # Ler novamente, mas pulando as linhas até o cabeçalho
-            df = pd.read_csv(io.StringIO(response.text), skiprows=header_row)
+            df = pd.read_csv(io.StringIO(response.text), skiprows=header_row, encoding='utf-8')
 
         # Tenta converter colunas numéricas
         for col in df.columns:
@@ -248,13 +251,13 @@ def converter_orcamento_para_olist(
                                 if isinstance(data_cell, (pd.Timestamp, pd.DatetimeTZDtype)):
                                     data_proposta_orc = data_cell
                                 else:
-                                    # Tentar converter string para data
-                                    data_proposta_orc = pd.to_datetime(data_cell, errors='coerce')
+                                    # Tentar converter string para data com dayfirst=True para formato brasileiro (dia/mês/ano)
+                                    data_proposta_orc = pd.to_datetime(data_cell, dayfirst=True, errors='coerce')
                                     if pd.isna(data_proposta_orc):
                                         # Tentar formatos comuns de data
                                         for fmt in ['%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d.%m.%Y']:
                                             try:
-                                                data_proposta_orc = pd.to_datetime(data_cell, format=fmt)
+                                                data_proposta_orc = pd.to_datetime(data_cell, format=fmt, dayfirst=True)
                                                 break
                                             except:
                                                 continue

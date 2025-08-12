@@ -160,9 +160,18 @@ def converter_orcamento_para_olist(
                         try:
                             # Verificar se há uma data na mesma linha
                             for other_cell in row:
-                                if pd.notna(other_cell) and isinstance(other_cell, (pd.Timestamp, pd.DatetimeTZDtype)):
-                                    data_proposta_orc = other_cell
-                                    break
+                                if pd.notna(other_cell):
+                                    if isinstance(other_cell, (pd.Timestamp, pd.DatetimeTZDtype)):
+                                        data_proposta_orc = other_cell
+                                        break
+                                    elif isinstance(other_cell, str):
+                                        # Tentar converter string para data com dayfirst=True para formato brasileiro (dia/mês/ano)
+                                        try:
+                                            data_proposta_orc = pd.to_datetime(other_cell, dayfirst=True, errors='coerce')
+                                            if not pd.isna(data_proposta_orc):
+                                                break
+                                        except:
+                                            continue
                         except Exception as e:
                             print(f"[CONVERSOR V6] Erro ao extrair data: {str(e)}", file=sys.stderr)
         
