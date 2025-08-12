@@ -34,11 +34,14 @@
       <main>
         <div class="input-section">
           <div class="form-group">
-            <label for="cliente-select">Selecione o Cliente</label>
-            <select id="cliente-select" name="cliente">
-              <option value="">Selecione um cliente...</option>
-              <!-- Opções de cliente serão carregadas aqui -->
-            </select>
+            <label for="cliente-input">Selecione o Cliente</label>
+            <div class="select-search-container">
+              <input type="text" id="cliente-input" placeholder="Digite para buscar um cliente..." autocomplete="off">
+              <div id="cliente-dropdown" class="dropdown-content" style="display: none;">
+                <!-- Opções de cliente serão carregadas aqui -->
+              </div>
+              <input type="hidden" id="cliente-select" name="cliente" value="">
+            </div>
           </div>
 
           <div class="form-group">

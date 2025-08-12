@@ -71,6 +71,7 @@ main {
 
 /* Estilização de inputs, select, textarea */
 select,
+input[type="text"],
 input[type="file"] /* Mantido para o input oculto, mas o botão será o principal */ {
   width: 100%;
   padding: 12px 15px;
@@ -84,6 +85,7 @@ input[type="file"] /* Mantido para o input oculto, mas o botão será o principa
 }
 
 select:focus,
+input[type='text']:focus,
 input[type='file']:focus {
   border-color: #80bdff; /* Cor da borda ao focar */
   outline: 0;
@@ -98,6 +100,49 @@ select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 15px center;
+}
+
+/* Estilos para o componente de busca de clientes */
+.select-search-container {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-content {
+  position: absolute;
+  background-color: #fff;
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  margin-top: 5px;
+}
+
+.dropdown-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #f8f9fa;
+}
+
+.dropdown-item.active {
+  background-color: #e9ecef;
+}
+
+.dropdown-item.highlight {
+  background-color: #e9ecef;
+}
+  background-size: 16px 12px;
+}
+
+/* Corrigindo o problema de formatação - este bloco estava fora de lugar */
+select {
   background-size: 16px 12px;
 }
 

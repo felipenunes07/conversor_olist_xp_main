@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const clienteSelect = document.getElementById('cliente-select')
+  const clienteSelect = document.getElementById('cliente-select') // Input hidden
+  const clienteInput = document.getElementById('cliente-input') // Input de texto para busca
+  const clienteDropdown = document.getElementById('cliente-dropdown') // Dropdown para resultados
   const usarArquivoExcelBtn = document.getElementById('usar-arquivo-excel-btn')
   const arquivoExcelInput = document.getElementById('arquivo-excel-input')
   const processarBtn = document.getElementById('processar-btn')
@@ -39,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     spinnerContainer.style.display = 'none'
     fileDisplay.style.display = 'flex'
     uploadArea.classList.add('file-selected')
-    processarBtn.disabled = false
+    // Habilita o botão apenas se um cliente estiver selecionado
+    processarBtn.disabled = !clienteSelect.value
     previewArea.innerHTML = ''
     previewArea.appendChild(placeholder) // Mostra o placeholder novamente
   }
@@ -84,13 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
     `
   }
 
-  // Função para carregar clientes no select
-  function carregarClientes() {
-    // Limpa opções existentes, exceto a primeira ("Selecione um cliente...")
-    while (clienteSelect.options.length > 1) {
-      clienteSelect.remove(1)
-    }
+  // Lista global de clientes para busca
+  let listaClientes = [];
 
+  // Função para carregar clientes
+  function carregarClientes() {
     fetch('/clientes')
       .then((response) => {
         if (!response.ok) {
@@ -112,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
           return
         }
         if (data.clientes && data.clientes.length > 0) {
-          const clientesOrdenados = data.clientes.sort((a, b) => {
+          listaClientes = data.clientes.sort((a, b) => {
             const nomeA = String(a.Nome)
             const nomeB = String(b.Nome)
             const matchA = nomeA.match(/^CL(\d+)/)
@@ -124,12 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idNumA !== Infinity) return -1
             if (idNumB !== Infinity) return 1
             return nomeA.localeCompare(nomeB)
-          })
-          clientesOrdenados.forEach((cliente) => {
-            const option = document.createElement('option')
-            option.value = cliente.ID
-            option.textContent = cliente.Nome
-            clienteSelect.appendChild(option)
           })
         } else {
           if (!previewArea.querySelector('#download-link')) {
@@ -145,6 +140,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
   }
+
+  // Função para filtrar clientes com base no texto digitado
+  function filtrarClientes(texto) {
+    const termoBusca = texto.toLowerCase();
+    return listaClientes.filter(cliente => 
+      cliente.Nome.toLowerCase().includes(termoBusca)
+    );
+  }
+
+  // Função para renderizar os clientes filtrados no dropdown
+  function renderizarClientesDropdown(clientesFiltrados) {
+    clienteDropdown.innerHTML = '';
+    
+    if (clientesFiltrados.length === 0) {
+      const mensagem = document.createElement('div');
+      mensagem.className = 'dropdown-item';
+      mensagem.textContent = 'Nenhum cliente encontrado';
+      clienteDropdown.appendChild(mensagem);
+      return;
+    }
+
+    clientesFiltrados.forEach(cliente => {
+      const item = document.createElement('div');
+      item.className = 'dropdown-item';
+      item.textContent = cliente.Nome;
+      item.dataset.id = cliente.ID;
+      item.dataset.nome = cliente.Nome;
+      
+      item.addEventListener('click', () => {
+        clienteInput.value = cliente.Nome;
+        clienteSelect.value = cliente.ID;
+        clienteDropdown.style.display = 'none';
+        // Verificar se o arquivo foi selecionado para habilitar o botão de processar
+        processarBtn.disabled = !arquivoSelecionado || !clienteSelect.value;
+      });
+      
+      clienteDropdown.appendChild(item);
+    });
+  }
+
+  // Event listeners para o campo de busca
+  clienteInput.addEventListener('focus', () => {
+    const clientesFiltrados = filtrarClientes(clienteInput.value);
+    renderizarClientesDropdown(clientesFiltrados);
+    clienteDropdown.style.display = 'block';
+  });
+
+  clienteInput.addEventListener('input', () => {
+    const clientesFiltrados = filtrarClientes(clienteInput.value);
+    renderizarClientesDropdown(clientesFiltrados);
+    clienteDropdown.style.display = 'block';
+    clienteSelect.value = ''; // Limpa a seleção quando o usuário digita
+    processarBtn.disabled = true; // Desabilita o botão até que um cliente seja selecionado
+  });
+
+  // Fechar o dropdown quando clicar fora dele
+  document.addEventListener('click', (e) => {
+    if (!clienteInput.contains(e.target) && !clienteDropdown.contains(e.target)) {
+      clienteDropdown.style.display = 'none';
+    }
+  });
 
   carregarClientes() // Carrega clientes ao iniciar
 
