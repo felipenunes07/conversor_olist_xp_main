@@ -3,7 +3,7 @@ cachetools==5.5.2
 certifi==2025.7.14
 cffi==1.17.1
 charset-normalizer==3.4.2
-click==8.2.0
+click==8.1.7
 colorama==0.4.6
 cryptography==36.0.2
 et_xmlfile==2.0.0
@@ -47,3 +47,4 @@ fastapi
 uvicorn
 gunicorn
 python-multipart
+
