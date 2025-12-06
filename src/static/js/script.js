@@ -266,45 +266,127 @@ document.addEventListener('DOMContentLoaded', () => {
 
     showSpinner()
     previewArea.innerHTML = ''
+    
+    // Esconder área de resultado da API
+    const apiResultArea = document.getElementById('api-result-area')
+    if (apiResultArea) {
+      apiResultArea.style.display = 'none'
+    }
 
     const formData = new FormData()
     formData.append('cliente_id', clienteId)
     formData.append('arquivo_excel', arquivoSelecionado)
 
-    fetch('/processar', { method: 'POST', body: formData })
+    // Verificar se deve enviar para Olist
+    const enviarOlistCheckbox = document.getElementById('enviar-olist-checkbox')
+    const enviarParaOlist = enviarOlistCheckbox && enviarOlistCheckbox.checked
+
+    const endpoint = enviarParaOlist ? '/processar_e_enviar' : '/processar'
+
+    fetch(endpoint, { method: 'POST', body: formData })
       .then(async (response) => {
         if (!response.ok) {
           const err = await response.json()
           throw new Error(err.error || 'Ocorreu um erro no servidor.')
         }
-        // Extrair nome do arquivo do header
-        let fileName = 'orcamento_convertido_olist.xlsx';
-        const disposition = response.headers.get('Content-Disposition');
-        if (disposition && disposition.includes('filename=')) {
-          fileName = disposition.split('filename=')[1].replace(/['"]/g, '').trim();
-        }
-        window.lastDownloadedFileName = fileName;
-        const blob = await response.blob()
-        if (blob) {
-          const url = window.URL.createObjectURL(blob)
-
-          showFeedback(
-            'success',
-            'Arquivo Processado!',
-            'Seu arquivo foi convertido com sucesso.',
-            url,
-            fileName
-          )
-
-          const a = document.createElement('a')
-          a.href = url
-          a.download = fileName
-          document.body.appendChild(a)
-          a.click()
-          a.remove()
-
+        
+        if (enviarParaOlist) {
+          // Resposta JSON com resultado da API
+          const data = await response.json()
+          
+          // Mostrar resultado da API
+          if (apiResultArea) {
+            apiResultArea.style.display = 'block'
+            const apiResultContent = document.getElementById('api-result-content')
+            
+            if (data.sucesso) {
+              apiResultContent.innerHTML = `
+                <div class="api-success">
+                  <p><strong>✅ ${data.mensagem}</strong></p>
+                  <p>Cliente: ${data.cliente_nome}</p>
+                  <p>Itens processados: ${data.itens_processados}</p>
+                </div>
+              `
+              showFeedback(
+                'success',
+                'Pedido Enviado!',
+                'Seu pedido foi processado e enviado para o Olist com sucesso.'
+              )
+            } else {
+              const erroMsg = data.api_resposta?.retorno?.registros?.registro?.[0]?.erros || 
+                             data.api_resposta?.erro || 
+                             'Verifique os detalhes do erro.'
+              apiResultContent.innerHTML = `
+                <div class="api-error">
+                  <p><strong>❌ ${data.mensagem}</strong></p>
+                  <p>Detalhes: ${JSON.stringify(erroMsg)}</p>
+                </div>
+              `
+              showFeedback(
+                'error',
+                'Erro no Envio',
+                'Houve um problema ao enviar para o Olist. O Excel foi gerado para importação manual.'
+              )
+            }
+          }
+          
+          // Disponibilizar Excel para download (backup)
+          if (data.excel_base64) {
+            const byteCharacters = atob(data.excel_base64)
+            const byteNumbers = new Array(byteCharacters.length)
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+            const blob = new Blob([byteArray], { 
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            })
+            const url = window.URL.createObjectURL(blob)
+            
+            // Adicionar botão de download ao feedback
+            const feedbackDiv = previewArea.querySelector('.feedback-message')
+            if (feedbackDiv) {
+              const downloadBtn = document.createElement('a')
+              downloadBtn.href = url
+              downloadBtn.download = `pedido_olist_${data.cliente_nome || 'convertido'}.xlsx`
+              downloadBtn.className = 'download-btn'
+              downloadBtn.textContent = 'Baixar Excel (Backup)'
+              feedbackDiv.appendChild(downloadBtn)
+            }
+          }
+          
           resetUploadUI()
-          clienteSelect.selectedIndex = 0
+          
+        } else {
+          // Comportamento original: download do Excel
+          let fileName = 'orcamento_convertido_olist.xlsx';
+          const disposition = response.headers.get('Content-Disposition');
+          if (disposition && disposition.includes('filename=')) {
+            fileName = disposition.split('filename=')[1].replace(/['"]/g, '').trim();
+          }
+          window.lastDownloadedFileName = fileName;
+          const blob = await response.blob()
+          if (blob) {
+            const url = window.URL.createObjectURL(blob)
+
+            showFeedback(
+              'success',
+              'Arquivo Processado!',
+              'Seu arquivo foi convertido com sucesso.',
+              url,
+              fileName
+            )
+
+            const a = document.createElement('a')
+            a.href = url
+            a.download = fileName
+            document.body.appendChild(a)
+            a.click()
+            a.remove()
+
+            resetUploadUI()
+            clienteSelect.selectedIndex = 0
+          }
         }
       })
       .catch((error) => {

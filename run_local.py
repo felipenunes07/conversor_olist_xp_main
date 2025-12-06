@@ -1,6 +1,18 @@
 import os
 import sys
 
+# Carrega variáveis de ambiente do arquivo .env (se existir)
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+        print(f"✅ Variáveis de ambiente carregadas de {env_path}")
+    else:
+        print("⚠️ Arquivo .env não encontrado. Crie um arquivo .env com OLIST_API_TOKEN=seu_token")
+except ImportError:
+    print("⚠️ python-dotenv não instalado. Execute: pip install python-dotenv")
+
 # Adiciona o diretório src ao path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -35,4 +47,4 @@ from src.main import app
 
 if __name__ == '__main__':
     # Executa a aplicação em modo debug
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)

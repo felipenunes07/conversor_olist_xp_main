@@ -2,21 +2,27 @@
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  background-color: #f8f9fa; /* Um cinza bem claro para o fundo */
-  color: #343a40; /* Cor de texto principal (escuro) */
+  background-color: #f8f9fa;
+  /* Um cinza bem claro para o fundo */
+  color: #343a40;
+  /* Cor de texto principal (escuro) */
   display: flex;
   justify-content: center;
   align-items: flex-start;
   min-height: 100vh;
-  padding: 40px 20px; /* Mais padding no body */
+  padding: 40px 20px;
+  /* Mais padding no body */
   box-sizing: border-box;
 }
 
 .container {
-  background-color: #ffffff; /* Fundo branco para o conteúdo principal */
+  background-color: #ffffff;
+  /* Fundo branco para o conteúdo principal */
   padding: 40px;
-  border-radius: 12px; /* Cantos mais arredondados */
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08); /* Sombra mais suave e moderna */
+  border-radius: 12px;
+  /* Cantos mais arredondados */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  /* Sombra mais suave e moderna */
   width: 100%;
   max-width: 1100px;
 }
@@ -26,28 +32,35 @@ header {
   text-align: center;
   margin-bottom: 40px;
   padding-bottom: 20px;
-  border-bottom: 1px solid #e9ecef; /* Linha divisória sutil */
+  border-bottom: 1px solid #e9ecef;
+  /* Linha divisória sutil */
 }
 
 header h1 {
-  font-size: 2.2em; /* Tamanho do título principal */
-  color: #212529; /* Cor escura para o título */
+  font-size: 2.2em;
+  /* Tamanho do título principal */
+  color: #212529;
+  /* Cor escura para o título */
   margin-bottom: 8px;
   font-weight: 600;
 }
 
 header p {
   font-size: 1.1em;
-  color: #6c757d; /* Cinza para o subtítulo */
+  color: #6c757d;
+  /* Cinza para o subtítulo */
   line-height: 1.6;
 }
 
 /* Layout principal */
 main {
   display: grid;
-  grid-template-columns: 1fr 1fr; /* Duas colunas de tamanho igual */
-  gap: 40px; /* Espaçamento maior entre as colunas */
-  align-items: start; /* Alinha os itens da grid no topo */
+  grid-template-columns: 1fr 1fr;
+  /* Duas colunas de tamanho igual */
+  gap: 40px;
+  /* Espaçamento maior entre as colunas */
+  align-items: start;
+  /* Alinha os itens da grid no topo */
 }
 
 .input-section,
@@ -63,20 +76,27 @@ main {
 
 .form-group label {
   display: block;
-  font-weight: 500; /* Peso da fonte para labels */
+  font-weight: 500;
+  /* Peso da fonte para labels */
   margin-bottom: 10px;
-  color: #495057; /* Cor para labels */
+  color: #495057;
+  /* Cor para labels */
   font-size: 0.95em;
 }
 
 /* Estilização de inputs, select, textarea */
 select,
 input[type="text"],
-input[type="file"] /* Mantido para o input oculto, mas o botão será o principal */ {
+input[type="file"]
+
+/* Mantido para o input oculto, mas o botão será o principal */
+  {
   width: 100%;
   padding: 12px 15px;
-  border: 1px solid #ced4da; /* Borda sutil */
-  border-radius: 8px; /* Cantos arredondados */
+  border: 1px solid #ced4da;
+  /* Borda sutil */
+  border-radius: 8px;
+  /* Cantos arredondados */
   box-sizing: border-box;
   font-size: 1em;
   background-color: #fff;
@@ -87,9 +107,11 @@ input[type="file"] /* Mantido para o input oculto, mas o botão será o principa
 select:focus,
 input[type='text']:focus,
 input[type='file']:focus {
-  border-color: #80bdff; /* Cor da borda ao focar */
+  border-color: #80bdff;
+  /* Cor da borda ao focar */
   outline: 0;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Sombra ao focar */
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  /* Sombra ao focar */
 }
 
 /* Estilo específico para o select (seta) */
@@ -138,7 +160,8 @@ select {
 .dropdown-item.highlight {
   background-color: #e9ecef;
 }
-  background-size: 16px 12px;
+
+background-size: 16px 12px;
 }
 
 /* Corrigindo o problema de formatação - este bloco estava fora de lugar */
@@ -221,6 +244,7 @@ select {
   cursor: pointer;
   font-weight: 500;
 }
+
 .remove-file-btn:hover {
   text-decoration: underline;
 }
@@ -229,6 +253,7 @@ select {
   text-align: center;
   color: #6b7280;
 }
+
 .spinner {
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-left-color: #3b82f6;
@@ -250,6 +275,7 @@ select {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -266,6 +292,7 @@ select {
   cursor: pointer;
   font-size: 1em;
 }
+
 .excel-btn:hover {
   text-decoration: underline;
 }
@@ -283,10 +310,12 @@ select {
   transition: all 0.2s ease;
   margin-top: 10px;
 }
+
 .processar-btn:hover {
   background-color: #374151;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
+
 .processar-btn:disabled {
   background-color: #9ca3af;
   cursor: not-allowed;
@@ -328,6 +357,7 @@ select {
   animation: fadeIn 0.5s ease;
   width: 100%;
 }
+
 .feedback-message .icon {
   width: 56px;
   height: 56px;
@@ -336,23 +366,28 @@ select {
   background-repeat: no-repeat;
   background-position: center;
 }
+
 .feedback-message .icon.success {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%2322c55e'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z' /%3E%3C/svg%3E");
 }
+
 .feedback-message .icon.error {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='%23ef4444'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M12 9v3.75m0-10.036A11.956 11.956 0 0112 2.25c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2.25zm0 13.5h.008v.008H12v-.008z' /%3E%3C/svg%3E");
 }
+
 .feedback-message h3 {
   font-size: 1.25em;
   color: #1f2937;
   margin-bottom: 8px;
 }
+
 .feedback-message p {
   color: #6b7280;
   line-height: 1.6;
   max-width: 400px;
   margin: 0 auto 20px auto;
 }
+
 .feedback-message .download-btn {
   display: inline-block;
   background-color: #22c55e;
@@ -363,16 +398,20 @@ select {
   font-weight: 600;
   transition: background-color 0.2s;
 }
+
 .feedback-message .download-btn:hover {
   background-color: #16a34a;
 }
 
 /* Responsividade */
 @media (max-width: 992px) {
+
   /* Ajuste do breakpoint */
   main {
-    grid-template-columns: 1fr; /* Uma coluna em telas menores */
+    grid-template-columns: 1fr;
+    /* Uma coluna em telas menores */
   }
+
   .container {
     padding: 30px;
   }
@@ -382,17 +421,159 @@ select {
   body {
     padding: 20px 10px;
   }
+
   .container {
     padding: 20px;
   }
+
   header h1 {
     font-size: 1.8em;
   }
+
   header p {
     font-size: 1em;
   }
+
   .upload-area,
   .preview-area {
     padding: 20px;
   }
+}
+
+/* Checkbox para enviar para Olist - Estilo Toggle Switch */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 10px;
+  border: 1px solid #bae6fd;
+  transition: all 0.3s ease;
+}
+
+.checkbox-group:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.15);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 0.95em;
+  color: #0369a1;
+  user-select: none;
+  font-weight: 500;
+}
+
+/* Toggle Switch estilizado */
+.checkbox-label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  margin-right: 12px;
+  transition: all 0.3s ease;
+}
+
+.checkbox-label input[type="checkbox"]::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.checkbox-label input[type="checkbox"]:checked::before {
+  transform: translateX(20px);
+}
+
+.checkbox-label:hover input[type="checkbox"] {
+  background: #94a3b8;
+}
+
+.checkbox-label:hover input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+}
+
+/* Ícone de API ao lado do texto */
+.checkbox-label::after {
+  content: '🚀';
+  margin-left: 8px;
+  font-size: 1.1em;
+}
+
+/* Área de resultado da API */
+.api-result-area {
+  margin-top: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.api-result-area h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #1f2937;
+  font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-result-area h4::before {
+  content: '📡';
+}
+
+.api-success {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1px solid #22c55e;
+  border-radius: 8px;
+  padding: 15px;
+  color: #166534;
+}
+
+.api-success p {
+  margin: 5px 0;
+}
+
+.api-error {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  padding: 15px;
+  color: #991b1b;
+}
+
+.api-error p {
+  margin: 5px 0;
+  word-break: break-word;
 }

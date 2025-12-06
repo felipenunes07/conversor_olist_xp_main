@@ -95,6 +95,15 @@
             >
               Processar Pedido
             </button>
+            
+            <!-- Opção para enviar diretamente para o Olist -->
+            <div class="checkbox-group" style="margin-top: 15px;">
+              <label class="checkbox-label">
+                <input type="checkbox" id="enviar-olist-checkbox" name="enviar_olist">
+                <span class="checkmark"></span>
+                Enviar diretamente para o Olist (API)
+              </label>
+            </div>
           </div>
         </div>
 
@@ -107,6 +116,12 @@
               <p>Aguardando arquivo para conversão...</p>
             </div>
             <!-- Feedback de sucesso ou erro aparecerá aqui -->
+          </div>
+          
+          <!-- Área para mostrar resultado da API -->
+          <div id="api-result-area" class="api-result-area" style="display: none;">
+            <h4>Resultado do Envio para Olist</h4>
+            <div id="api-result-content"></div>
           </div>
         </div>
       </main>

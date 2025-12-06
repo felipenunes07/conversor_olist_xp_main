@@ -20,6 +20,9 @@ from werkzeug.utils import secure_filename # Para nomes de arquivo seguros
 # Importa a função de conversão do outro arquivo .py
 from conversor_olist import converter_orcamento_para_olist
 
+# Importa funções para integração com API do Olist
+from olist_api import enviar_pedido_olist, validar_resposta_api, testar_conexao
+
 app = Flask(__name__, static_folder='static', template_folder='static')
 
 # Define o caminho base para os arquivos de dados que estão dentro de 'src'
@@ -265,6 +268,147 @@ def processar_arquivo():
                 'message': str(e),
                 'traceback': traceback.format_exc()
             }
+        }), 500
+
+
+@app.route('/processar_e_enviar', methods=['POST'])
+def processar_e_enviar():
+    """
+    Processa o arquivo Excel e envia o pedido diretamente para a API do Olist.
+    Retorna o resultado da API junto com o Excel gerado.
+    """
+    try:
+        # Check required files first
+        missing_files = check_required_files()
+        if missing_files:
+            return jsonify({
+                'error': 'Missing required files',
+                'details': {'missing': missing_files}
+            }), 500
+
+        if 'arquivo_excel' not in request.files:
+            return jsonify({'error': 'No Excel file uploaded'}), 400
+        
+        file = request.files['arquivo_excel']
+        cliente_id_str = request.form.get('cliente_id')
+
+        if not cliente_id_str:
+            return jsonify({'error': 'No client ID provided'}), 400
+
+        if file.filename == '':
+            return jsonify({'error': 'Empty filename'}), 400
+
+        if not file or not allowed_file(file.filename):
+            return jsonify({'error': 'Invalid file type. Use .xlsx'}), 400
+
+        # Create in-memory file
+        input_excel = io.BytesIO(file.read())
+        
+        try:
+            # Converter o orçamento para o formato Olist
+            df_convertido = converter_orcamento_para_olist(
+                input_excel,
+                MAPEAMENTO_PRODUTOS_SHEET_URL,
+                CLIENTES_SHEET_URL,
+                cliente_id_str,
+                MODELO_SAIDA_OLIST_PATH
+            )
+
+            if df_convertido.empty:
+                return jsonify({'error': 'No data processed'}), 500
+
+            # Buscar nome do cliente para o pedido
+            from conversor_olist import get_dataframe_from_google_sheet
+            df_clientes = get_dataframe_from_google_sheet(CLIENTES_SHEET_URL, sheet_name='clientes')
+            nome_cliente = None
+            if 'ID' in df_clientes.columns and 'Nome' in df_clientes.columns:
+                info_cliente_df = df_clientes[df_clientes['ID'].astype(str) == str(cliente_id_str)]
+                if not info_cliente_df.empty:
+                    nome_cliente = info_cliente_df.iloc[0]['Nome']
+            if not nome_cliente:
+                nome_cliente = f"cliente_{cliente_id_str}"
+
+            # Extrair número da proposta e data do DataFrame (primeira linha)
+            numero_pedido = None
+            data_pedido = None
+            if not df_convertido.empty:
+                primeira_linha = df_convertido.iloc[0]
+                if 'Número da proposta' in df_convertido.columns:
+                    num_prop = primeira_linha.get('Número da proposta')
+                    if pd.notna(num_prop):
+                        numero_pedido = str(num_prop)
+                if 'Data' in df_convertido.columns:
+                    data_val = primeira_linha.get('Data')
+                    if pd.notna(data_val):
+                        data_pedido = data_val
+
+            # Enviar para a API do Olist
+            resultado_api = enviar_pedido_olist(
+                df_convertido,
+                cliente_id_str,
+                nome_cliente,
+                numero_pedido,
+                data_pedido
+            )
+
+            # Verificar se o envio foi bem-sucedido
+            api_sucesso = validar_resposta_api(resultado_api)
+
+            # Gerar Excel para download (backup)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                df_convertido.to_excel(writer, index=False, sheet_name='Sheet1')
+            output.seek(0)
+            excel_base64 = output.read()
+            
+            import base64
+            excel_b64_str = base64.b64encode(excel_base64).decode('utf-8')
+
+            # Preparar resposta
+            response_data = {
+                'sucesso': api_sucesso,
+                'api_resposta': resultado_api,
+                'excel_base64': excel_b64_str,
+                'cliente_nome': nome_cliente,
+                'itens_processados': len(df_convertido),
+                'mensagem': 'Pedido enviado com sucesso para o Olist!' if api_sucesso else 'Erro ao enviar pedido para o Olist. Verifique os detalhes.'
+            }
+
+            return jsonify(response_data)
+
+        except Exception as e:
+            app.logger.error(f"Error processing file: {str(e)}\n{traceback.format_exc()}")
+            return jsonify({
+                'error': 'Error processing file',
+                'details': {
+                    'message': str(e),
+                    'traceback': traceback.format_exc()
+                }
+            }), 500
+
+    except Exception as e:
+        app.logger.error(f"Unexpected error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            'error': 'Unexpected error',
+            'details': {
+                'message': str(e),
+                'traceback': traceback.format_exc()
+            }
+        }), 500
+
+
+@app.route('/testar_api', methods=['GET'])
+def testar_api_olist():
+    """
+    Endpoint para testar a conexão com a API do Olist.
+    """
+    try:
+        resultado = testar_conexao()
+        return jsonify(resultado)
+    except Exception as e:
+        return jsonify({
+            'status': 'Erro',
+            'erro': str(e)
         }), 500
 
 # @app.route('/upload_mapeamento', methods=['POST'])
